@@ -1,6 +1,6 @@
 Custom End-to-End RNA-Seq Differential Gene Expression (DGE) Pipeline
 > A lightweight, dataset-agnostic Python pipeline designed for processing raw RNA-Seq count data, executing rigorous statistical differential expression analysis, and generating publication-grade dynamic visualizations.
-This project was built from scratch without black-box statistical packages (e.g., DESeq2, edgeR) to ensure full mathematical transparency, modularity, and explicit control over normalization, variance estimation, and multiple hypothesis correction.**
+This project was built from scratch without black-box statistical packages (e.g., DESeq2, edgeR) to ensure full mathematical transparency, modularity, and explicit control over normalization, variance estimation, and multiple hypothesis correction.
 ---
 🧬 Statistical Methodology & Workflow
 The pipeline consists of two primary stages: statistical differential testing (`scripts/gene\_analyze.py`) and dynamic visualization (`scripts/plot\_results.py`).
