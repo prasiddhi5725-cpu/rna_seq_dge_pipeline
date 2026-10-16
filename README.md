@@ -1,66 +1,167 @@
-Custom End-to-End RNA-Seq Differential Gene Expression (DGE) Pipeline
-> A lightweight, dataset-agnostic Python pipeline designed for processing raw RNA-Seq count data, executing rigorous statistical differential expression analysis, and generating publication-grade dynamic visualizations.
-This project was built from scratch without black-box statistical packages (e.g., DESeq2, edgeR) to ensure full mathematical transparency, modularity, and explicit control over normalization, variance estimation, and multiple hypothesis correction.
+# Custom End-to-End RNA-Seq Differential Gene Expression (DGE) Pipeline
+
+> A lightweight, dataset-agnostic Python pipeline for processing raw RNA-Seq count data, running differential expression analysis, and generating publication-grade volcano plots. Available as scripts, an upload-based CLI, and an interactive web GUI.
+
+Built from scratch without black-box packages (DESeq2, edgeR) so normalization, testing, and multiple-testing correction stay fully transparent.
+
 ---
-🧬 Statistical Methodology & Workflow
-The pipeline consists of two primary stages: statistical differential testing (`scripts/gene\_analyze.py`) and dynamic visualization (`scripts/plot\_results.py`).
-1. Data Pre-processing & Normalization
-Counts Per Million (CPM): Adjusts raw read counts for varying sequencing depths across biological replicates:
-$$\text{CPM}{i, j} = \left( \frac{c{i, j}}{\sum_{k} c_{k, j}} \right) \times 10^6$$
-Log2 Fold Change ($\text{Log}_2\text{FC}$): Quantifies relative expression shifts between control and treatment groups. A pseudocount ($\epsilon = 1.0$) is added to smooth zero counts prior to transformation:
-$$\text{Log}2\text{FC}i = \log_2(\bar{x}{\text{treated}, i} + \epsilon) - \log_2(\bar{x}{\text{control}, i} + \epsilon)$$
-2. Hypothesis Testing & Multiple Testing Correction
-Welch’s t-Test: Evaluates differential expression per gene without assuming equal population variances between sample conditions.
-Benjamini-Hochberg (BH) FDR Adjustment: Adjusts $p$-values to control the False Discovery Rate across thousands of simultaneous tests:
+
+## Features
+
+- CPM normalization, log2 fold change, Welch's t-test, Benjamini-Hochberg FDR
+- Works with any count matrix in `.csv` or `.tsv` format
+- Three ways to run it: fixed scripts, upload-based CLI, interactive GUI
+- Publication-ready volcano plots with non-overlapping gene labels
+- Downloadable results table and plot
+
+---
+
+## Methodology
+
+### 1. Pre-processing and normalization
+
+**Low-count filtering:** genes with fewer than 10 total reads across all samples are removed.
+
+**Counts Per Million (CPM):** corrects for sequencing depth.
+
+$$\text{CPM}_{i,j} = \left( \frac{c_{i,j}}{\sum_{k} c_{k,j}} \right) \times 10^6$$
+
+**Log2 Fold Change:** a pseudocount ($\epsilon = 1.0$) smooths zero counts.
+
+$$\text{Log}_2\text{FC}_i = \log_2(\bar{x}_{\text{treated},i} + \epsilon) - \log_2(\bar{x}_{\text{control},i} + \epsilon)$$
+
+### 2. Hypothesis testing
+
+- **Welch's t-test** per gene, with no equal-variance assumption.
+- **Benjamini-Hochberg FDR** adjustment across all tests:
+
 $$P_{(i)}^{\text{adj}} = \min \left( P_{(i)} \cdot \frac{m}{i}, P_{(i+1)}^{\text{adj}} \right)$$
-3. Differential Significance Criteria
-Upregulated: $\text{Log}_2\text{FC} \ge 1.0$ AND $\text{Adjusted } p\text{-value} \le 0.10$
-Downregulated: $\text{Log}_2\text{FC} \le -1.0$ AND $\text{Adjusted } p\text{-value} \le 0.10$
-No Significant Change: Fails either or both magnitude and significance thresholds.
+
+### 3. Significance criteria
+
+| Status | Condition |
+|---|---|
+| Upregulated | Log2FC ≥ 1.0 and adjusted p ≤ 0.10 |
+| Downregulated | Log2FC ≤ -1.0 and adjusted p ≤ 0.10 |
+| No significant change | Fails either threshold |
+
 ---
-📊 Publication-Quality Visualization
-The `plot\_results.py` script renders non-overlapping volcano plots with dynamic axis scaling, customized color palettes, and label collision avoidance powered by `adjustText`.
+
+## Three Ways to Run
+
+| Mode | File | Use when |
+|---|---|---|
+| Fixed pipeline | `gene_analyze.py` + `plot_results.py` | Reproducing the demo on `gene_counts.csv` |
+| Upload-based CLI | `dge_for_uploaded_files.py` | Analyzing your own `.csv` / `.tsv` file |
+| Interactive GUI | `dge_gui.py` | No-code analysis in the browser |
+
+### 1. Fixed pipeline (demo data)
+
+```bash
+python3 generate_data.py     # optional: simulate a count matrix
+python3 gene_analyze.py      # writes dge_results.csv
+python3 plot_results.py      # writes volcano_plot.png
+```
+
+### 2. Upload-based CLI: `dge_for_uploaded_files.py`
+
+Runs DGE on any count matrix you point it to.
+
+```bash
+python3 dge_for_uploaded_files.py
+# Enter file name in csv or tsv format: my_counts.tsv
+```
+
+**Input format**
+
+- First column: gene IDs (used as the index)
+- Remaining columns: raw counts, one column per sample
+- Delimiter is detected from the extension (`.csv` is comma-separated, anything else is tab-separated)
+
+**Group assignment**
+
+- If column names contain `Control 1` and `Treatment`, columns are grouped by those names (e.g. `Control 1`, `Control 2`, `Treatment 1`, `Treatment 2`).
+- Otherwise the columns are split in half: first half is control, second half is treatment.
+
+**Output:** a results table (`dge_results_2.csv`) with Log2FC, p-values, adjusted p-values, and significance status. Plot it with `plot_2.py`.
+
+### 3. Interactive GUI: `dge_gui.py`
+
+A Streamlit app for point-and-click analysis.
+
+```bash
+streamlit run dge_gui.py
+```
+
+Then open the local URL shown in the terminal (usually `http://localhost:8501`).
+
+**What it does**
+
+- Upload a `.csv` / `.tsv` count matrix
+- Runs the full DGE analysis
+- Shows an interactive volcano plot with the top genes labeled
+- Shows a **Top 20 genes** table sorted by adjusted p-value
+- Download buttons for the results (`dge_results.csv`) and the plot (`volcano_plot.jpg`, 300 dpi)
+
+---
+
+## Volcano Plot
+
 ![Volcano Plot](volcano_plot.png)
+
 ---
-📂 Repository Structure
+
+## Repository Structure
+
 ```text
 .
-├── scripts/
-│   ├── generate\_data.py   # Generates simulated count matrices for testing
-│   ├── gene\_analyze.py    # Main statistical DGE execution pipeline
-│   └── plot\_results.py    # Dynamic, publication-ready volcano plot generator
-├── data/
-│   ├── gene\_counts.csv    # Raw count matrix input
-│   └── dge\_results.csv   # Statistical outputs (Log2FC, p-values, padj, status)
-├── volcano\_plot.png       # Rendered visualization figure
-├── requirements.txt       # Python environment dependencies
-└── README.md              # Project documentation
+├── generate_data.py            # Simulated count matrix generator
+├── gene_analyze.py             # Core DGE pipeline (fixed input)
+├── plot_results.py             # Volcano plot generator
+├── dge_for_uploaded_files.py   # DGE on any user-supplied csv/tsv
+├── dge_gui.py                  # Streamlit GUI
+├── gene_counts.csv             # Demo count matrix
+├── dge_results.csv             # Demo results
+├── volcano_plot.png            # Demo figure
+├── requirements.txt
+└── README.md
 ```
+
 ---
-🚀 Execution Guide
-1. Requirements & Dependencies
-Ensure you have Python 3.8+ installed along with the required scientific libraries:
+
+## Installation
+
+Python 3.8+ required.
+
 ```bash
-pip install pandas numpy scipy matplotlib seaborn adjustText
+pip install -r requirements.txt
 ```
-2. Running the Pipeline
-(Optional) Generate Mock Data:
-```bash
-   python3 generate\_data.py
-   ```
-Execute DGE Analysis:
-```bash
-   python3 gene\_analyze.py
-   ```
-Generates `dge\_results.csv` containing normalized metrics, test statistics, and significance annotations.
-Generate Publication Plot:
-```bash
-   python3 plot\_results.py
-   ```
-Generates `volcano\_plot.png` ready for publication or presentation.
+
+`requirements.txt`:
+
+```text
+pandas
+numpy
+scipy
+statsmodels
+matplotlib
+seaborn
+adjustText
+streamlit
+```
+
 ---
-🛠️ Stack
-Language: Python 3
-Scientific Computing: `pandas`, `numpy`, `scipy`
-Data Visualization: `matplotlib`, `seaborn`, `adjustText`
-Environment: Linux / WSL2
+
+## Stack
+
+- **Language:** Python 3
+- **Computation:** `pandas`, `numpy`, `scipy`, `statsmodels`
+- **Visualization:** `matplotlib`, `seaborn`, `adjustText`
+- **GUI:** `streamlit`
+- **Environment:** Linux / WSL2 / Windows
+
+---
+
+## Author
+
+Prasiddhi, BSc Bioinformatics, Kathmandu University
