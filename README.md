@@ -108,6 +108,7 @@ Then open the local URL shown in the terminal (usually `http://localhost:8501`).
 ## Volcano Plot
 
 ![Volcano Plot](volcano_plot.png)
+![Volcano Plot](volcano_plot_final.png)
 
 ---
 
